@@ -30,24 +30,8 @@ public class CartPageTests
         Cart testCart = new();
         testCart.AddItem(p1, 2);
         testCart.AddItem(p2, 1);
-        // - create a mock page context and session
-        Mock<ISession> mockSession = new();
-        var data = Encoding.UTF8.GetBytes(
-            JsonSerializer.Serialize(testCart));
-        mockSession.Setup(c => c.TryGetValue(It.IsAny<string>(), out data!));
-        Mock<HttpContext> mockContext = new();
-        mockContext.SetupGet(c => c.Session).Returns(mockSession.Object);
         
-        // Act
-        CartModel cartModel = new(mockRepo.Object)
-        {
-            PageContext = new(new ActionContext()
-            {
-                HttpContext = mockContext.Object,
-                RouteData = new(),
-                ActionDescriptor = new()
-            })
-        };
+        CartModel cartModel = new(mockRepo.Object, testCart);
         cartModel.OnGet("myUrl");
         
         // Assert
@@ -65,25 +49,11 @@ public class CartPageTests
         mockRepo.Setup(m => m.Products).Returns((new[] {
             new Product { ProductID = 1, Name = "P1" }
         }).AsQueryable<Product>());
-        Cart? testCart = new Cart();
-        Mock<ISession> mockSession = new Mock<ISession>();
-        mockSession.Setup(s =>
-                s.Set(It.IsAny<string>(), It.IsAny<byte[]>()))
-            .Callback<string, byte[]>((key, val) => {
-                testCart = JsonSerializer.Deserialize<Cart>(
-                    Encoding.UTF8.GetString(val));
-            });
-        Mock<HttpContext> mockContext = new Mock<HttpContext>();
-        mockContext.SetupGet(c =>
-            c.Session).Returns(mockSession.Object);
-        // Action
-        CartModel cartModel = new CartModel(mockRepo.Object) {
-            PageContext = new PageContext(new ActionContext {
-                HttpContext = mockContext.Object,
-                RouteData = new RouteData(),
-                ActionDescriptor = new PageActionDescriptor()
-            })
-        };
+        
+        Cart testCart = new();
+        
+        // Act
+        CartModel cartModel = new(mockRepo.Object, testCart);
         cartModel.OnPost(1, "myUrl");
         //Assert
         Assert.Single(testCart.Lines);
