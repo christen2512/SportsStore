@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using SportsStore.Models;
 
@@ -21,7 +22,23 @@ builder.Services.AddScoped<Cart>(sp => SessionCart.GetCart(sp));
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddServerSideBlazor();
 
+builder.Services.AddDbContext<AppIdentityDbContext>(opts =>
+    opts.UseSqlServer(builder.Configuration.GetConnectionString("IdentityConnection")));
+builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<AppIdentityDbContext>();
+
 var app = builder.Build();
+
+if (app.Environment.IsProduction())
+{
+    app.UseExceptionHandler("/Error");
+}
+
+app.UseRequestLocalization(opts =>
+{
+    opts.AddSupportedCultures("en-US")
+        .AddSupportedUICultures("en-US")
+        .SetDefaultCulture("en-US");
+});
 
 app.UseStaticFiles();
 app.UseSession();
@@ -44,5 +61,5 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/admin/{*catchall}", "/Admin/Index");
 
 SeedData.EnsurePopulated(app);
-
+IdentitySeedData.EnsurePopulated(app);
 app.Run();
